@@ -57,3 +57,13 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+---
+
+## ServeMe
+
+Cette application utilise le schéma de la base **serveme_platform** (export phpMyAdmin fourni). Pour l'environnement de développement :
+
+1. Créer la base `serveme_platform` et importer le dump SQL.
+2. Configurer `.env` avec MySQL/MariaDB : `DB_CONNECTION=mysql`, `DB_DATABASE=serveme_platform`, etc. (voir `.env.example`).
+3. Ne pas exécuter les migrations `*_create_reservations_table.php` et `*_create_reviews_table.php` : les tables sont déjà définies dans le dump.

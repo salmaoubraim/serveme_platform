@@ -22,6 +22,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'phone',
     ];
 
     /**
@@ -45,5 +46,25 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function client(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Client::class, 'id');
+    }
+
+    public function prestataire(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Prestataire::class, 'id');
+    }
+
+    public function clientReservations(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Reservation::class, 'client_id');
+    }
+
+    public function providerReservations(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Reservation::class, 'prestataire_id');
     }
 }

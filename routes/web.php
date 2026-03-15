@@ -18,11 +18,16 @@ Route::get('/', fn () => view('home'))->name('home');
 Route::get('/about',   fn () => view('about'))->name('about');
 Route::get('/blog',    fn () => view('blog'))->name('blog');
 Route::get('/contact', fn () => view('contact'))->name('contact');
+Route::post('/contact', function (\Illuminate\Http\Request $request) {
+    $request->validate(['name' => 'required|string|max:100', 'email' => 'required|email', 'message' => 'required|string|max:2000']);
+    // TODO: envoyer email ou enregistrer en base
+    return redirect()->route('contact')->with('success', 'Votre message a bien été envoyé. Nous vous répondrons rapidement.');
+})->name('contact.send');
 
 // Services & Prestataires (public)
-Route::get('/services',            fn () => view('services.index'))->name('services.index');
+Route::get('/services', [\App\Http\Controllers\ServiceController::class, 'index'])->name('services.index');
 Route::get('/services/{category}', fn ($category) => view('services.category', compact('category')))->name('services.category');
-Route::get('/providers/{id}',      fn ($id) => view('providers.show', compact('id')))->name('providers.show');
+Route::get('/providers/{id}', [\App\Http\Controllers\ProviderController::class, 'show'])->name('providers.show');
 
 // ══════════════════════════════════════════════════════════
 //  AUTH ROUTES (Breeze / Jetstream ou manuel)
@@ -43,17 +48,17 @@ Route::post('/logout', function () {
 })->middleware('auth')->name('logout');
 
 // ══════════════════════════════════════════════════════════
-//  CLIENT ROUTES  (role: client)
+//  CLIENT ROUTES  (role: client) — Interface client (layout client, pas dashboard admin)
 // ══════════════════════════════════════════════════════════
 
 Route::middleware(['auth'])->group(function () {
 
-    // Dashboard commun (redirige selon le rôle)
+    // Dashboard commun : admin/prestataire → leur dashboard ; client → tableau de bord intégré (layout app, design vert)
     Route::get('/dashboard', function () {
         return match (auth()->user()->role) {
-            'admin'    => redirect()->route('admin.dashboard'),
-            'provider' => redirect()->route('provider.dashboard'),
-            default    => view('client.dashboard'),
+            'admin'       => redirect()->route('admin.dashboard'),
+            'prestataire' => redirect()->route('provider.dashboard'),
+            default       => view('client.dashboard'),
         };
     })->name('dashboard');
 
@@ -64,10 +69,10 @@ Route::middleware(['auth'])->group(function () {
 
     // Réservations (Client)
     Route::prefix('reservations')->name('reservations.')->group(function () {
-        Route::get('/',           fn () => view('reservations.index'))->name('index');
+        Route::get('/',           [\App\Http\Controllers\ReservationController::class, 'index'])->name('index');
         Route::get('/create',     fn () => view('reservations.create'))->name('create');
         Route::post('/',          [\App\Http\Controllers\ReservationController::class, 'store'])->name('store');
-        Route::get('/{id}',       fn ($id) => view('reservations.show', compact('id')))->name('show');
+        Route::get('/{id}',       [\App\Http\Controllers\ReservationController::class, 'show'])->name('show');
         Route::patch('/{id}/cancel', [\App\Http\Controllers\ReservationController::class, 'cancel'])->name('cancel');
     });
 
@@ -83,7 +88,7 @@ Route::middleware(['auth'])->group(function () {
 //  PROVIDER ROUTES  (role: provider)
 // ══════════════════════════════════════════════════════════
 
-Route::middleware(['auth', 'role:provider'])->prefix('provider')->name('provider.')->group(function () {
+Route::middleware(['auth', 'role:prestataire'])->prefix('provider')->name('provider.')->group(function () {
 
     Route::get('/dashboard',  fn () => view('provider.dashboard'))->name('dashboard');
     Route::get('/profile',    fn () => view('provider.profile'))->name('profile');

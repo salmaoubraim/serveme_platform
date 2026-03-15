@@ -191,15 +191,18 @@
   }
   .auth-submit {
     width: 100%;
-    padding: 0.875rem 1rem;
-    font-size: 0.9375rem;
-    font-weight: 700;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
     color: #fff;
     background: var(--sm-primary);
     border: none;
-    border-radius: 12px;
+    border-radius: 0.5rem;
     cursor: pointer;
     transition: background .2s, transform .02s;
+  }
+  @media (min-width: 640px) {
+    .auth-submit { padding: 0.625rem 1rem; font-size: 0.9375rem; font-weight: 700; }
   }
   .auth-submit:hover { background: var(--sm-mid); }
   .auth-submit:active { transform: scale(0.99); }
@@ -319,12 +322,26 @@
   .user-menu-trigger:hover { background: var(--sm-slate); }
   .user-avatar { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--sm-accent); object-fit: cover; }
 
-  /* ── Mobile menu ──────────────────────────────────────── */
-  .mobile-nav {
-    background: var(--sm-white);
-    border-top: 1px solid var(--sm-border);
-    padding: .75rem 1rem 1.25rem;
+  /* ── Mobile menu : drawer à droite (hamburger à droite) ── */
+  .mobile-nav-overlay {
+    position: fixed; inset: 0; z-index: 199;
+    background: rgba(30,45,44,.4);
+    opacity: 0; visibility: hidden;
+    transition: opacity .25s, visibility .25s;
   }
+  .mobile-nav-overlay.show { opacity: 1; visibility: visible; }
+  .mobile-nav {
+    position: fixed; top: 0; right: 0; z-index: 200;
+    width: min(320px, 88vw); height: 100vh;
+    background: var(--sm-white);
+    border-left: 1px solid var(--sm-border);
+    padding: 1rem 1rem 2rem;
+    overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform .3s cubic-bezier(.22,.68,0,1.02);
+    box-shadow: -8px 0 24px -4px rgba(0,0,0,.12);
+  }
+  .mobile-nav.show { transform: translateX(0); }
   .mobile-nav-link {
     display: flex; align-items: center; gap: .75rem;
     padding: .7rem .75rem; border-radius: 10px;
@@ -395,6 +412,13 @@
   .social-btn:hover { background: rgba(110,196,185,.2); }
 
   @media(max-width: 1023px) { main { padding-bottom: 68px; } }
+
+  /* ── Transition entre pages ───────────────────────────── */
+  .page-wrap { animation: pageIn .35s ease-out; }
+  @keyframes pageIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
   </style>
 </head>
 
@@ -436,22 +460,12 @@
                  x-transition:enter-start="opacity-0 -translate-y-2"
                  x-transition:enter-end="opacity-100 translate-y-0"
                  class="sm-dropdown">
-              @foreach([
-                ['🔧','Mécanique & Auto','mecanique'],
-                ['🚿','Plomberie','plomberie'],
-                ['⚡','Électricité','electricite'],
-                ['🏠','Services à domicile','domicile'],
-                ['🎓','Cours particuliers','education'],
-                ['💼','Services entreprise','entreprise'],
-              ] as [$icon,$label,$slug])
-              <a href="{{ url('/services?category='.$slug) }}" class="sm-dropdown-item">
-                <span class="text-base">{{ $icon }}</span>{{ $label }}
-              </a>
+              @foreach($navCategories ?? [] as $cat)
+              <a href="{{ url('/services?category='.$cat->id) }}" class="sm-dropdown-item">{{ $cat->name }}</a>
               @endforeach
             </div>
           </div>
 
-          <a href="{{ url('/blog') }}" class="nav-link {{ request()->is('blog*') ? 'active' : '' }}">Blog</a>
           <a href="{{ url('/contact') }}" class="nav-link {{ request()->is('contact') ? 'active' : '' }}">Contact</a>
         </div>
 
@@ -515,9 +529,10 @@
             </button>
             <div x-show="open" x-cloak x-transition class="sm-dropdown w-52" style="left:auto;right:0;transform:none">
               <a href="{{ route('dashboard') }}" class="sm-dropdown-item">🏠 Tableau de bord</a>
-              <a href="{{ route('profile.edit') }}" class="sm-dropdown-item">👤 Mon profil</a>
+              <a href="{{ url('/services') }}" class="sm-dropdown-item">📌 Réserver un service</a>
               <a href="{{ route('reservations.index') }}" class="sm-dropdown-item">📋 Mes réservations</a>
-              @if(auth()->user()->role === 'provider')
+              <a href="{{ route('profile.edit') }}" class="sm-dropdown-item">👤 Mon profil</a>
+              @if(auth()->user()->role === 'prestataire')
               <a href="{{ route('provider.dashboard') }}" class="sm-dropdown-item">🔧 Espace prestataire</a>
               @endif
               <div style="height:1px;background:var(--sm-border);margin:.4rem .5rem"></div>
@@ -536,8 +551,8 @@
           @endauth
         </div>
 
-        {{-- BURGER : visible seulement quand la fenêtre est petite (< 1024px), jamais sur PC ──}}
-        <button @click="mobileOpen=!mobileOpen" class="navbar-burger lg:hidden icon-btn" aria-label="Menu">
+        {{-- HAMBURGER à droite : visible seulement sur mobile (< 1024px) --}}
+        <button @click="mobileOpen=!mobileOpen" class="navbar-burger lg:hidden icon-btn order-last" aria-label="Menu">
           <svg x-show="!mobileOpen" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path d="M4 6h16M4 12h16M4 18h16"/>
           </svg>
@@ -547,8 +562,14 @@
         </button>
       </div>
 
-      {{-- MENU DÉROULANT (quand fenêtre petite, pas sur PC) --}}
-      <div x-show="mobileOpen" x-cloak x-collapse class="mobile-nav lg:hidden">
+      {{-- OVERLAY + MENU DRAWER à droite (mobile) --}}
+      <div x-show="mobileOpen" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+           x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+           class="mobile-nav-overlay lg:hidden" :class="{ 'show': mobileOpen }"
+           @click="mobileOpen = false"></div>
+      <div x-show="mobileOpen" x-cloak x-transition:enter="transition ease-out duration-300" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
+           x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full"
+           class="mobile-nav lg:hidden">
 
         {{-- Recherche mobile organisée --}}
         <div class="search-bar-wrap w-full mb-3">
@@ -567,7 +588,6 @@
         <a href="{{ url('/') }}" class="mobile-nav-link {{ request()->is('/') ? 'active' : '' }}">🏠 Accueil</a>
         <a href="{{ url('/about') }}" class="mobile-nav-link">ℹ️ À propos</a>
         <a href="{{ url('/services') }}" class="mobile-nav-link {{ request()->is('services*') ? 'active' : '' }}">🔧 Services</a>
-        <a href="{{ url('/blog') }}" class="mobile-nav-link {{ request()->is('blog*') ? 'active' : '' }}">📰 Blog</a>
         <a href="{{ url('/contact') }}" class="mobile-nav-link {{ request()->is('contact') ? 'active' : '' }}">📞 Contact</a>
 
         <div class="mobile-divider"></div>
@@ -587,8 +607,9 @@
           </div>
         </div>
         <a href="{{ route('dashboard') }}" class="mobile-nav-link">🏠 Tableau de bord</a>
-        <a href="{{ route('profile.edit') }}" class="mobile-nav-link">👤 Mon profil</a>
+        <a href="{{ url('/services') }}" class="mobile-nav-link">📌 Réserver un service</a>
         <a href="{{ route('reservations.index') }}" class="mobile-nav-link">📋 Mes réservations</a>
+        <a href="{{ route('profile.edit') }}" class="mobile-nav-link">👤 Mon profil</a>
         <form method="POST" action="{{ route('logout') }}" class="mt-1">@csrf
           <button type="submit" class="mobile-nav-link w-full text-left" style="color:#ef4444">🚪 Déconnexion</button>
         </form>
@@ -607,7 +628,7 @@
        class="toast-wrap"><div class="toast-item toast-error">✕ {{ session('error') }}</div></div>
   @endif
 
-  <main class="min-h-screen">
+  <main class="min-h-screen page-wrap">
     @yield('content')
   </main>
 
@@ -642,7 +663,7 @@
         <div>
           <h4 class="footer-head">Navigation</h4>
           <ul class="space-y-2.5">
-            @foreach(['Accueil'=>'/','À propos'=>'/about','Services'=>'/services','Blog'=>'/blog','Contact'=>'/contact'] as $label=>$path)
+            @foreach(['Accueil'=>'/','À propos'=>'/about','Services'=>'/services','Contact'=>'/contact'] as $label=>$path)
             <li><a href="{{ url($path) }}" class="footer-link flex items-center gap-2">
               <svg class="w-3 h-3 flex-shrink-0" style="color:var(--sm-accent)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M9 5l7 7-7 7"/></svg>
               {{ $label }}
@@ -670,7 +691,7 @@
           <ul class="space-y-4 text-sm">
             <li class="flex items-start gap-3">
               <svg class="w-4 h-4 mt-0.5 flex-shrink-0" style="color:var(--sm-accent)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-              Casablanca, Maroc
+              Agadir, Maroc
             </li>
             <li class="flex items-center gap-3">
               <svg class="w-4 h-4 flex-shrink-0" style="color:var(--sm-accent)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>

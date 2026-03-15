@@ -29,8 +29,8 @@
             <span class="auth-role-label">Client</span>
             <span class="auth-role-desc">Rechercher et réserver des services</span>
           </label>
-          <label class="auth-role-option {{ old('role', request('role', 'client')) === 'provider' ? 'auth-role-option-active' : '' }}">
-            <input type="radio" name="role" value="provider" {{ old('role', request('role', 'client')) === 'provider' ? 'checked' : '' }} class="sr-only peer">
+          <label class="auth-role-option {{ old('role', request('role', 'client')) === 'prestataire' ? 'auth-role-option-active' : '' }}">
+            <input type="radio" name="role" value="prestataire" {{ old('role', request('role', 'client')) === 'prestataire' ? 'checked' : '' }} class="sr-only peer">
             <span class="auth-role-icon">🔧</span>
             <span class="auth-role-label">Prestataire</span>
             <span class="auth-role-desc">Proposer mes services</span>

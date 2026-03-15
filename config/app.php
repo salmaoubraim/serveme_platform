@@ -123,4 +123,13 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Devise / Currency (paiement)
+    |--------------------------------------------------------------------------
+    | MAD = Dirham marocain
+    */
+    'currency' => env('APP_CURRENCY', 'MAD'),
+    'currency_symbol' => env('APP_CURRENCY_SYMBOL', 'MAD'),
+
 ];

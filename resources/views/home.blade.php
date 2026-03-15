@@ -629,12 +629,12 @@
           @endforeach
         </ul>
         @guest
-        <a href="{{ route('register') }}?role=provider" class="inline-flex items-center gap-2 font-bold px-6 py-3 rounded-full text-sm transition-colors" style="background:var(--sm-accent);color:var(--sm-dark)">Devenir prestataire</a>
+        <a href="{{ route('register') }}?role=prestataire" class="inline-flex items-center gap-2 font-bold px-6 py-3 rounded-full text-sm transition-colors" style="background:var(--sm-accent);color:var(--sm-dark)">Devenir prestataire</a>
         @else
-        @if(auth()->user()->role === 'provider')
+        @if(auth()->user()->role === 'prestataire')
         <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-2 font-bold px-6 py-3 rounded-full text-sm transition-colors" style="background:var(--sm-accent);color:var(--sm-dark)">Mon tableau de bord</a>
         @else
-        <a href="{{ route('register') }}?role=provider" class="inline-flex items-center gap-2 font-bold px-6 py-3 rounded-full text-sm transition-colors" style="background:var(--sm-accent);color:var(--sm-dark)">Devenir prestataire</a>
+        <a href="{{ route('register') }}?role=prestataire" class="inline-flex items-center gap-2 font-bold px-6 py-3 rounded-full text-sm transition-colors" style="background:var(--sm-accent);color:var(--sm-dark)">Devenir prestataire</a>
         @endif
         @endauth
       </div>

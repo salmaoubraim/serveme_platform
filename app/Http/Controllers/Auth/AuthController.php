@@ -40,19 +40,27 @@ class AuthController extends Controller
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'confirmed', Password::defaults()],
-            'role'     => ['nullable', 'string', 'in:client,provider'],
+            'role'     => ['nullable', 'string', 'in:client,prestataire'],
         ], [], [
             'name'     => 'nom',
             'email'    => 'adresse e-mail',
             'password' => 'mot de passe',
         ]);
 
+        $role = $validated['role'] ?? 'client';
+
         $user = User::create([
             'name'     => $validated['name'],
             'email'    => $validated['email'],
             'password' => $validated['password'],
-            'role'     => $validated['role'] ?? 'client',
+            'role'     => $role,
         ]);
+
+        if ($role === 'client') {
+            \App\Models\Client::create(['id' => $user->id]);
+        } else {
+            \App\Models\Prestataire::create(['id' => $user->id]);
+        }
 
         Auth::login($user);
         $request->session()->regenerate();
